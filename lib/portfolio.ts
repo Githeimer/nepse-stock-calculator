@@ -11,6 +11,18 @@ export interface Lot {
   notes: string | null;
 }
 
+export interface Sale {
+  txId: number;
+  date: string;
+  quantity: number;
+  price: Paisa;
+  cgt: Paisa;
+  net: Paisa;
+  allocatedCost: Paisa;
+  realized: Paisa;
+  notes: string | null;
+}
+
 export interface StockSummary {
   held: number;
   bought: number;
@@ -18,6 +30,7 @@ export interface StockSummary {
   costBasis: Paisa;
   wacc: Paisa | null;
   lots: Lot[];
+  sales: Sale[];
   realized: Paisa;
   proceeds: Paisa;
 }
@@ -31,6 +44,7 @@ export const EMPTY_SUMMARY: StockSummary = {
   costBasis: 0n,
   wacc: null,
   lots: [],
+  sales: [],
   realized: 0n,
   proceeds: 0n,
 };
@@ -49,9 +63,11 @@ export function replay(txs: TxRow[]): StockSummary {
   let realized: Paisa = 0n;
   let proceeds: Paisa = 0n;
   const lots: Lot[] = [];
+  const sales: Sale[] = [];
 
   for (const tx of sortForReplay(txs)) {
-    const gross = toPaisa(tx.price_per_share) * BigInt(tx.quantity);
+    const price = toPaisa(tx.price_per_share);
+    const gross = price * BigInt(tx.quantity);
     const fees = toPaisa(tx.commission) + toPaisa(tx.sebon_fee) + toPaisa(tx.dp_charge);
 
     if (tx.type === "SELL") {
@@ -61,13 +77,26 @@ export function replay(txs: TxRow[]): StockSummary {
         );
       }
       const allocated = divRound(cost * BigInt(tx.quantity), BigInt(held));
-      const net = gross - fees - toPaisa(tx.cgt);
+      const cgt = toPaisa(tx.cgt);
+      const net = gross - fees - cgt;
 
       cost -= allocated;
       held -= tx.quantity;
       sold += tx.quantity;
       proceeds += net;
       realized += net - allocated;
+
+      sales.push({
+        txId: tx.id,
+        date: tx.transaction_date,
+        quantity: tx.quantity,
+        price,
+        cgt,
+        net,
+        allocatedCost: allocated,
+        realized: net - allocated,
+        notes: tx.notes,
+      });
 
       let remaining = tx.quantity;
       for (const lot of lots) {
@@ -86,7 +115,7 @@ export function replay(txs: TxRow[]): StockSummary {
         type: tx.type,
         originalQty: tx.quantity,
         remainingQty: tx.quantity,
-        price: toPaisa(tx.price_per_share),
+        price,
         notes: tx.notes,
       });
     }
@@ -99,6 +128,7 @@ export function replay(txs: TxRow[]): StockSummary {
     costBasis: cost,
     wacc: held > 0 ? divRound(cost, BigInt(held)) : null,
     lots: lots.filter((lot) => lot.remainingQty > 0),
+    sales,
     realized,
     proceeds,
   };

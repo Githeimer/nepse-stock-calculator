@@ -262,3 +262,35 @@ h2 { font-size: 0.95rem; font-weight: 600; margin: 0 0 0.6rem; }
 @media (max-width: 480px) {
   .form-row.three { grid-template-columns: 1fr; }
 }
+/* Links and small buttons */
+.link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.btn.small { padding: 0.25rem 0.6rem; font-size: 0.85rem; }
+.ltp .link { display: inline-block; margin-top: 0.25rem; }
+.price-form { display: flex; gap: 0.4rem; align-items: center; justify-content: flex-end; flex-wrap: wrap; margin-top: 0.4rem; }
+.price-form input { width: 7rem; padding: 0.3rem 0.5rem; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--bg); color: var(--fg); text-align: right; }
+.price-form .error { flex-basis: 100%; margin: 0; text-align: right; }
+
+/* Lots + sell preview */
+.detail-cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1.5rem; align-items: start; }
+.detail-cols .data { min-width: 420px; }
+.section-gap { margin-top: 1.5rem; }
+.sell { background: var(--bg); border-radius: 8px; padding: 1rem; }
+.sell form { display: flex; flex-direction: column; gap: 0.75rem; }
+.sell-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.sell-fields .span { grid-column: 1 / -1; justify-self: start; }
+.sell .field input { background: var(--panel); }
+.sell .error, .sell-note { margin: 0; }
+.sell-save { width: 100%; }
+
+/* Broker-bill style breakdown */
+.bill { background: var(--panel); border-radius: 6px; padding: 0.75rem 1rem; }
+.bill table { border-collapse: collapse; width: 100%; }
+.bill td { padding: 0.4rem 0; border-bottom: 1px dashed var(--rule); vertical-align: top; }
+.bill td.num { padding-left: 1rem; }
+.bill .sub { display: block; font-size: 0.78rem; color: var(--muted); }
+.bill tr.total td { font-weight: 600; font-size: 1.05rem; border-top: 1px dashed var(--muted); border-bottom: 1px dashed var(--muted); }
+.bill tr.result td { font-weight: 600; font-size: 1.05rem; border-bottom: 0; padding-top: 0.6rem; }
+
+@media (max-width: 1000px) {
+  .detail-cols { grid-template-columns: 1fr; }
+}

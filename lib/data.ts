@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { toPaisa, type Paisa } from "./money";
 import { EMPTY_SUMMARY, HoldingsError, replay, type StockSummary } from "./portfolio";
 import type { FeeSettings, PriceRow, StockRow } from "./types";
+export { daysBetween, todayInNepal } from "./date";
 
 export interface Holding {
   id: number;
@@ -113,12 +114,4 @@ export function portfolioTotals(holdings: Holding[]) {
   }
 
   return { cost, pricedCost, value, unrealized: value - pricedCost, realized, kitta, stocksHeld, unpriced };
-}
-
-export function todayInNepal(): string {
-  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" });
-}
-
-export function daysBetween(from: string, to: string): number {
-  return Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
 }

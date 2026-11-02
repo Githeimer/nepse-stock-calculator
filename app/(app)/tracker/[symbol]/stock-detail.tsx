@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { daysBetween, getTrackerData, todayInNepal } from "@/lib/data";
 import { formatRs } from "@/lib/money";
 import { Pl } from "@/components/pl";
+import { PriceEditor } from "./price-editor";
+import { SellPreview } from "./sell-preview";
 
 const TYPE_LABELS = { BUY: "Buy", IPO: "IPO", RIGHT: "Right", BONUS: "Bonus", SELL: "Sell" } as const;
 
@@ -60,6 +62,7 @@ export async function StockDetail({ params }: { params: Promise<{ symbol: string
           ) : (
             <span className="muted">No price yet</span>
           )}
+          <PriceEditor key={h.price?.price_time ?? "none"} symbol={h.symbol} ltp={h.ltp} />
         </div>
       </header>
 
@@ -98,46 +101,98 @@ export async function StockDetail({ params }: { params: Promise<{ symbol: string
         </div>
       </dl>
 
-      <h2>Lots</h2>
-      {s.lots.length === 0 ? (
-        <p className="muted">No shares held.</p>
-      ) : (
-        <div className="table-wrap">
-          <table className="data">
-            <thead>
-              <tr>
-                <th>Bought</th>
-                <th>Type</th>
-                <th className="num">Kitta</th>
-                <th className="num">Rate</th>
-                <th className="num">Amount</th>
-                <th>Held</th>
-              </tr>
-            </thead>
-            <tbody>
-              {s.lots.map((lot) => {
-                const days = daysBetween(lot.date, today);
-                return (
-                  <tr key={lot.txId}>
-                    <td>{formatDate(lot.date)}</td>
-                    <td>{TYPE_LABELS[lot.type]}</td>
-                    <td className="num">
-                      {lot.remainingQty < lot.originalQty
-                        ? `${lot.remainingQty} of ${lot.originalQty}`
-                        : lot.remainingQty}
-                    </td>
-                    <td className="num">{formatRs(lot.price)}</td>
-                    <td className="num">{formatRs(lot.price * BigInt(lot.remainingQty))}</td>
-                    <td className="muted">
-                      {days} days{days > longTermDays ? ", long-term" : ""}
-                    </td>
+      <div className="detail-cols">
+        <div>
+          <h2>Lots</h2>
+          {s.lots.length === 0 ? (
+            <p className="muted">No shares held.</p>
+          ) : (
+            <div className="table-wrap">
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>Bought</th>
+                    <th>Type</th>
+                    <th className="num">Kitta</th>
+                    <th className="num">Rate</th>
+                    <th>Held</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {s.lots.map((lot) => {
+                    const days = daysBetween(lot.date, today);
+                    return (
+                      <tr key={lot.txId}>
+                        <td>{formatDate(lot.date)}</td>
+                        <td>{TYPE_LABELS[lot.type]}</td>
+                        <td className="num">
+                          {lot.remainingQty < lot.originalQty
+                            ? `${lot.remainingQty} of ${lot.originalQty}`
+                            : lot.remainingQty}
+                        </td>
+                        <td className="num">{formatRs(lot.price)}</td>
+                        <td className="muted">
+                          {days} days{days > longTermDays ? ", long-term" : ""}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {s.sales.length > 0 && (
+            <>
+              <h2 className="section-gap">Sales</h2>
+              <div className="table-wrap">
+                <table className="data">
+                  <thead>
+                    <tr>
+                      <th>Sold</th>
+                      <th className="num">Kitta</th>
+                      <th className="num">Price</th>
+                      <th className="num">Received</th>
+                      <th className="num">Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...s.sales].reverse().map((sale) => (
+                      <tr key={sale.txId}>
+                        <td>{formatDate(sale.date)}</td>
+                        <td className="num">{sale.quantity}</td>
+                        <td className="num">{formatRs(sale.price)}</td>
+                        <td className="num">{formatRs(sale.net)}</td>
+                        <td className="num">
+                          <Pl value={sale.realized} base={sale.allocatedCost} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
-      )}
+
+        {s.held > 0 && !h.problem ? (
+          <SellPreview
+            key={`${s.held}-${s.costBasis}-${h.ltp ?? "none"}`}
+            symbol={h.symbol}
+            held={s.held}
+            costBasis={s.costBasis}
+            lots={s.lots}
+            ltp={h.ltp}
+            fees={fees}
+            today={today}
+          />
+        ) : (
+          <div className="sell">
+            <h2>Sell preview</h2>
+            <p className="muted">No shares to sell.</p>
+          </div>
+        )}
+      </div>
     </>
   );
 }

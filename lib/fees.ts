@@ -3,7 +3,7 @@ import type { BuyType, FeeSettings } from "./types";
 
 const RATE_SCALE = 1_000_000n;
 
-function rateToMicros(rate: number): bigint {
+export function rateToMicros(rate: number): bigint {
   return BigInt(Math.round(rate * 1_000_000));
 }
 
