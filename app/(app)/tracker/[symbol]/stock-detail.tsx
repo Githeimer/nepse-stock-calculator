@@ -4,6 +4,8 @@ import { formatRs } from "@/lib/money";
 import { Pl } from "@/components/pl";
 import { PriceEditor } from "./price-editor";
 import { SellPreview } from "./sell-preview";
+import { toPaisa } from "@/lib/money";
+import { DeleteTransaction, EditTransaction } from "./transaction-action";
 
 const TYPE_LABELS = { BUY: "Buy", IPO: "IPO", RIGHT: "Right", BONUS: "Bonus", SELL: "Sell" } as const;
 
@@ -193,6 +195,48 @@ export async function StockDetail({ params }: { params: Promise<{ symbol: string
           </div>
         )}
       </div>
+            <details className="history">
+        <summary>All transactions ({h.transactions.length})</summary>
+        <div className="table-wrap">
+          <table className="data">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th className="num">Kitta</th>
+                <th className="num">Price</th>
+                <th className="num">Fees</th>
+                <th className="num">CGT</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...h.transactions].reverse().map((tx) => {
+                const feesTotal = toPaisa(tx.commission) + toPaisa(tx.sebon_fee) + toPaisa(tx.dp_charge);
+                const label = `the ${TYPE_LABELS[tx.type].toLowerCase()} of ${tx.quantity} kitta on ${formatDate(tx.transaction_date)}`;
+                return (
+                  <tr key={tx.id}>
+                    <td>{formatDate(tx.transaction_date)}</td>
+                    <td>{TYPE_LABELS[tx.type]}</td>
+                    <td className="num">{tx.quantity}</td>
+                    <td className="num">{formatRs(toPaisa(tx.price_per_share))}</td>
+                    <td className="num">{formatRs(feesTotal)}</td>
+                    <td className="num">{tx.type === "SELL" ? formatRs(toPaisa(tx.cgt)) : "—"}</td>
+                    <td className="muted small">{tx.notes}</td>
+                    <td>
+                      <div className="row-actions">
+                        <EditTransaction tx={tx} transactions={h.transactions} fees={fees} today={today} />
+                        <DeleteTransaction id={tx.id} label={label} />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </details>
     </>
   );
 }

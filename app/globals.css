@@ -294,3 +294,21 @@ h2 { font-size: 0.95rem; font-weight: 600; margin: 0 0 0.6rem; }
 @media (max-width: 1000px) {
   .detail-cols { grid-template-columns: 1fr; }
 }
+/* Transaction history */
+.history { margin-top: 1.5rem; border-top: 1px solid var(--rule); padding-top: 1rem; }
+.history summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; margin-bottom: 0.6rem; }
+.row-actions { display: flex; gap: 0.75rem; justify-content: flex-end; align-items: center; white-space: nowrap; }
+.inline-form { display: inline; }
+.inline-form .error { white-space: normal; margin: 0.25rem 0 0; }
+.danger { color: var(--loss); }
+.static-value { font-size: 1rem; color: var(--fg); padding: 0.5rem 0; }
+.form-note { margin: 0.25rem 0 0; }
+
+/* Settings */
+.settings { max-width: 680px; }
+.settings-form { display: flex; flex-direction: column; gap: 1rem; }
+.settings-form section { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.settings-form h2, .settings-form p { margin: 0; }
+.tiers { min-width: 360px; }
+.tiers input { width: 100%; padding: 0.4rem 0.5rem; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--bg); color: var(--fg); }
+.field.narrow { max-width: 14rem; }

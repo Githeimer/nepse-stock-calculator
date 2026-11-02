@@ -1,9 +1,10 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { toPaisa, type Paisa } from "./money";
-import { EMPTY_SUMMARY, HoldingsError, replay, type StockSummary } from "./portfolio";
-import type { FeeSettings, PriceRow, StockRow } from "./types";
+import { EMPTY_SUMMARY, HoldingsError, replay, sortForReplay, type StockSummary } from "./portfolio";
+import type { FeeSettings, PriceRow, StockRow, TxRow } from "./types";
 export { daysBetween, todayInNepal } from "./date";
+
 
 export interface Holding {
   id: number;
@@ -16,6 +17,7 @@ export interface Holding {
   unrealized: Paisa | null;
   unrealizedPct: number | null;
   problem: string | null;
+    transactions: TxRow[];
 }
 
 export const getTrackerData = cache(async () => {
@@ -54,7 +56,7 @@ export const getTrackerData = cache(async () => {
 
   const priceBySymbol = new Map(prices.map((p) => [p.symbol, p]));
 
-  const holdings: Holding[] = stocks.map((stock) => {
+    const holdings: Holding[] = stocks.map((stock) => {
     let summary = EMPTY_SUMMARY;
     let problem: string | null = null;
     try {
@@ -78,6 +80,7 @@ export const getTrackerData = cache(async () => {
       symbol: stock.symbol,
       companyName: stock.company_name,
       summary,
+      transactions: sortForReplay(stock.transactions ?? []),
       price,
       ltp,
       marketValue,

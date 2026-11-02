@@ -6,6 +6,7 @@ import { todayInNepal } from "@/lib/data";
 import type { BuyType } from "@/lib/types";
 import { HoldingsError, replay } from "@/lib/portfolio";
 import type { TxRow } from "@/lib/types";
+import { redirect } from "next/navigation";
 
 export type BuyState = {
   error: string | null;
@@ -177,4 +178,143 @@ export async function updatePrice(_prev: PriceState, formData: FormData): Promis
 
   revalidatePath("/tracker", "layout");
   return { error: null, savedAt: Date.now() };
+}
+const TX_COLUMNS =
+  "id, type, quantity, price_per_share, transaction_date, commission, sebon_fee, dp_charge, cgt, notes";
+
+async function loadHistoryFor(txId: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Your session expired. Sign in again." } as const;
+
+  const { data: target, error: targetError } = await supabase
+    .from("transactions")
+    .select("id, stock_id")
+    .eq("id", txId)
+    .maybeSingle();
+  if (targetError) return { error: targetError.message } as const;
+  if (!target) return { error: "That transaction no longer exists." } as const;
+
+  const { data: stock, error: stockError } = await supabase
+    .from("stocks")
+    .select(`id, symbol, transactions(${TX_COLUMNS})`)
+    .eq("id", target.stock_id)
+    .single();
+  if (stockError || !stock) return { error: stockError?.message ?? "Stock not found." } as const;
+
+  return {
+    supabase,
+    stock: stock as { id: number; symbol: string; transactions: TxRow[] },
+  } as const;
+}
+
+export type EditState = { error: string | null; savedAt: number };
+
+export async function updateTransaction(_prev: EditState, formData: FormData): Promise<EditState> {
+  const fail = (error: string): EditState => ({ error, savedAt: 0 });
+
+  const id = Number(formData.get("id"));
+  const type = String(formData.get("type") ?? "") as TxRow["type"];
+  const date = String(formData.get("date") ?? "");
+  const quantity = Number(formData.get("quantity"));
+  const price = Number(formData.get("price"));
+  const commission = Number(formData.get("commission") || 0);
+  const sebonFee = Number(formData.get("sebon_fee") || 0);
+  const dpCharge = Number(formData.get("dp_charge") || 0);
+  const cgtInput = Number(formData.get("cgt") || 0);
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+
+  if (!Number.isInteger(id)) return fail("Unknown transaction.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("Enter a date.");
+  if (date > todayInNepal()) return fail("The date can't be in the future.");
+  if (!Number.isInteger(quantity) || quantity <= 0) return fail("Kitta must be a whole number above zero.");
+  if (!isAmount(price)) return fail("Enter a valid price.");
+  if ((type === "BUY" || type === "SELL") && price === 0) return fail("The price must be above zero.");
+  if (![commission, sebonFee, dpCharge, cgtInput].every(isAmount)) return fail("Fees and tax must be zero or positive amounts.");
+
+  const loaded:any = await loadHistoryFor(id);
+  if ("error" in loaded) return fail(loaded.error);
+
+  const original = loaded.stock.transactions.find((t:any) => t.id === id);
+  if (!original) return fail("That transaction no longer exists.");
+
+  const wasSell = original.type === "SELL";
+  if (wasSell !== (type === "SELL")) {
+    return fail("A buy can't be changed into a sale, or the other way round. Delete it and add a new one instead.");
+  }
+  if (!wasSell && !BUY_TYPES.includes(type as BuyType)) return fail("Choose how you got these shares.");
+
+  const cgt = type === "SELL" ? cgtInput : 0;
+  const updated: TxRow = {
+    ...original,
+    type,
+    quantity,
+    price_per_share: price,
+    transaction_date: date,
+    commission,
+    sebon_fee: sebonFee,
+    dp_charge: dpCharge,
+    cgt,
+    notes,
+  };
+
+  try {
+    replay(loaded.stock.transactions.map((t:any) => (t.id === id ? updated : t)));
+  } catch (error) {
+    if (error instanceof HoldingsError) return fail(`This change would break a later sale. ${error.message}`);
+    throw error;
+  }
+
+  const { error } = await loaded.supabase
+    .from("transactions")
+    .update({
+      type,
+      quantity,
+      price_per_share: price,
+      transaction_date: date,
+      commission,
+      sebon_fee: sebonFee,
+      dp_charge: dpCharge,
+      cgt,
+      notes,
+    })
+    .eq("id", id);
+  if (error) return fail(`Couldn't save the change: ${error.message}`);
+
+  revalidatePath("/tracker", "layout");
+  return { error: null, savedAt: Date.now() };
+}
+
+export type DeleteState = { error: string | null };
+
+export async function deleteTransaction(_prev: DeleteState, formData: FormData): Promise<DeleteState> {
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) return { error: "Unknown transaction." };
+
+  const loaded:any = await loadHistoryFor(id);
+  if ("error" in loaded) return { error: loaded.error };
+
+  const remaining = loaded.stock.transactions.filter((t:any) => t.id !== id);
+  try {
+    replay(remaining);
+  } catch (error) {
+    if (error instanceof HoldingsError) {
+      return { error: `Deleting this would leave a later sale without enough shares. ${error.message}` };
+    }
+    throw error;
+  }
+
+  const { error } = await loaded.supabase.from("transactions").delete().eq("id", id);
+  if (error) return { error: `Couldn't delete: ${error.message}` };
+
+  if (remaining.length === 0) {
+    await loaded.supabase.from("stocks").delete().eq("id", loaded.stock.id);
+    revalidatePath("/tracker", "layout");
+    redirect("/tracker");
+  }
+
+  revalidatePath("/tracker", "layout");
+  return { error: null };
 }
