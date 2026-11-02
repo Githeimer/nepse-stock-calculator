@@ -1,0 +1,8 @@
+[project]
+name = "prices"
+version = "0.1.0"
+requires-python = ">=3.15"
+dependencies = [
+    "nepseman-api>=1.0.1",
+    "psycopg[binary]>=3.3.6",
+]
