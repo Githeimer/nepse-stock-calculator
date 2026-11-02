@@ -312,3 +312,20 @@ h2 { font-size: 0.95rem; font-weight: 600; margin: 0 0 0.6rem; }
 .tiers { min-width: 360px; }
 .tiers input { width: 100%; padding: 0.4rem 0.5rem; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--bg); color: var(--fg); }
 .field.narrow { max-width: 14rem; }
+
+/* Snapshot */
+.snapshot { display: flex; flex-direction: column; gap: 1rem; }
+.snap-panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 1.25rem 1.5rem; min-width: 0; }
+.snap-panel h1 { margin-bottom: 0.25rem; }
+.snap-panel > p { margin: 0 0 0.5rem; }
+.upload { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-top: 1rem; }
+.upload .field { flex: 1 1 260px; }
+.upload input[type="file"] { width: 100%; font-size: 0.9rem; padding: 0.45rem; border: 1px dashed var(--muted); border-radius: var(--radius); background: var(--bg); color: var(--fg); }
+.upload > .error, .upload-result { flex-basis: 100%; margin: 0; }
+.upload-result p { margin: 0.15rem 0; }
+.snap-table { min-width: 760px; }
+.snap-action { text-align: right; white-space: nowrap; }
+
+@media (max-width: 860px) {
+  .snap-panel { padding: 1rem; }
+}

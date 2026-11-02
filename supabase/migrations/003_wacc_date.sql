@@ -1,0 +1,1 @@
+alter table public.snapshot_holdings add column wacc_date date;
