@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
-export default function HomePage() {
-  redirect("/tracker");
+export default function HomePage()
+{
+    redirect("/login")
 }

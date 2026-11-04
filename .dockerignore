@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.env*
+jobs
+Dockerfile
+docker-compose.yml
+Caddyfile
+README.md

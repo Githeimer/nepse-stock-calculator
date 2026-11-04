@@ -1,0 +1,8 @@
+{
+	email dulalhimesh@gmail.com
+}
+
+nepse.himeshdulal.com.np {
+	encode zstd gzip
+	reverse_proxy web:3000
+}
